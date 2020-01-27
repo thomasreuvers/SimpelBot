@@ -15,17 +15,32 @@ namespace SimpelBot.Modules
     {
         private static string word;
         private static RestUserMessage msg;
-        [Command("hangman")]
+        private static RestUserMessage WordInfo;
+        private static int lives = 6; 
+
+        [Command("hangman", RunMode = RunMode.Async)]
         [Summary("Hangman minigame minigame")]
         public async Task HangManAsync(string userInput)
         {
 
             if (userInput.ToLower().Equals("start"))
             {
+                await Context.Message.DeleteAsync();
+                lives = 6;
                 await GenerateWord();
             }
             else
             {
+                if (lives <= 0)
+                {
+                    var returnMsg = await Context.Channel.SendMessageAsync("Oops, you ran out of guesses! Use `!hangman start` to start a new game!");
+                    await msg.DeleteAsync();
+                    await WordInfo.DeleteAsync();
+                    await Task.Delay(5000);
+                    await returnMsg.DeleteAsync();
+                    return;
+                }
+
                 await Context.Message.DeleteAsync();
                 userInput = userInput.ToLower();
 
@@ -33,8 +48,11 @@ namespace SimpelBot.Modules
                 {
                     await Context.Channel.SendMessageAsync($"{Context.Message.Author.Username} guessed the word! The word was **{word}**");
                     await msg.DeleteAsync();
+                    await WordInfo.DeleteAsync();
                     return;
                 }
+
+
 
                 if (word.Contains(userInput.First()))
                 {
@@ -55,15 +73,18 @@ namespace SimpelBot.Modules
                         exists = exists.Remove(occurance, 1).Insert(occurance, userInput.First());
                     }
 
-
                     await msg.DeleteAsync();
 
                     msg = await Context.Channel.SendMessageAsync(exists.ToString());
                 }
+                else
+                {
+                    lives -= 1;
+                }
             }
         }
 
-        public async Task GenerateWord()
+        private async Task GenerateWord()
         {
             string[] words =
             {
@@ -73,7 +94,7 @@ namespace SimpelBot.Modules
                 "elastiek",
                 "introductie"
             };
-            var rndm = new Random().Next(0, 5);
+            var rndm = new Random().Next(0, words.Length);
             word = words[rndm];
 
             var places = "";
@@ -83,7 +104,7 @@ namespace SimpelBot.Modules
                 places += "-";
             }
 
-            await Context.Channel.SendMessageAsync($"A new hangman game has been created.\nThe word consists out of **{word.Length}** characters.");
+            WordInfo = await Context.Channel.SendMessageAsync($"A new hangman game has been created.\nThe word consists out of **{word.Length}** characters.");
             msg = await Context.Channel.SendMessageAsync($"{places}");
         }
     }
