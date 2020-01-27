@@ -31,6 +31,8 @@ namespace SimpelBot
             var cmdHandler = new CommandHandler(_client, new CommandService(), LoadConfig().ClientPrefix);
             await cmdHandler.InstallCommandsAsync();
 
+            await _client.SetGameAsync("!help",null, ActivityType.Listening);
+
             // Block this task until the program is closed.
             await Task.Delay(-1);
         }
